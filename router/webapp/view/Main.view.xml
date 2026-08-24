@@ -1,0 +1,209 @@
+<mvc:View
+  controllerName="iflowpptest.controller.Main"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core"
+  displayBlock="true">
+
+  <Shell>
+    <App>
+      <Page title="Named-User iFlow Deploy — Principal Propagation" showNavButton="false">
+        <content>
+          <IconTabBar>
+            <items>
+              <IconTabFilter icon="sap-icon://inspect" text="Token Check" key="tokens">
+                <VBox class="sapUiMediumMargin">
+                  <Text wrapping="true" class="sapUiSmallMarginBottom"
+                    text="Verify token propagation from IAS. Click 'Check Tokens' to confirm the x-identity-token header is present and contains your user identity."/>
+                  <Button text="Check Token Headers" icon="sap-icon://inspect" type="Emphasized" press="onCheckToken" class="sapUiSmallMarginBottom"/>
+                  <MessageStrip
+                    visible="{tokenModel>/checked}"
+                    text="{tokenModel>/summary}"
+                    type="{tokenModel>/msgType}"
+                    showIcon="true"
+                    class="sapUiSmallMarginBottom"/>
+                  <VBox visible="{tokenModel>/checked}" class="sapUiSmallMarginTop">
+                    <Panel headerText="XSUAA Token (Source Subaccount)" expandable="true" expanded="true" class="sapUiSmallMarginBottom">
+                      <content>
+                        <VBox class="sapUiSmallMargin">
+                          <HBox><Label text="Present:" width="12rem"/><Text text="{tokenModel>/hasXsuaaToken}"/></HBox>
+                          <HBox><Label text="Key ID (kid):" width="12rem"/><Text text="{tokenModel>/xsuaaKid}"/></HBox>
+                          <HBox><Label text="Issuer:" width="12rem"/><Text text="{tokenModel>/xsuaaIssuer}"/></HBox>
+                          <HBox><Label text="Email:" width="12rem"/><Text text="{tokenModel>/xsuaaEmail}"/></HBox>
+                        </VBox>
+                      </content>
+                    </Panel>
+                    <Panel headerText="IAS Token (x-identity-token header)" expandable="true" expanded="true" class="sapUiSmallMarginBottom">
+                      <content>
+                        <VBox class="sapUiSmallMargin">
+                          <HBox><Label text="Present (required):" width="12rem"/><ObjectStatus text="{tokenModel>/hasIasToken}" state="{tokenModel>/iasTokenState}"/></HBox>
+                          <HBox><Label text="Key ID (kid):" width="12rem"/><Text text="{tokenModel>/iasKid}"/></HBox>
+                          <HBox><Label text="Issuer:" width="12rem"/><Text text="{tokenModel>/iasIssuer}"/></HBox>
+                          <HBox><Label text="Email:" width="12rem"/><Text text="{tokenModel>/iasEmail}"/></HBox>
+                          <HBox><Label text="Subject (GUID):" width="12rem"/><Text text="{tokenModel>/iasSubject}"/></HBox>
+                        </VBox>
+                      </content>
+                    </Panel>
+                    <Panel
+                      headerText="IAS Token (raw JWT — for debugging)"
+                      expandable="true" expanded="false"
+                      visible="{tokenModel>/hasRawIasToken}"
+                      class="sapUiSmallMarginTop">
+                      <content>
+                        <VBox class="sapUiSmallMargin">
+                          <Text wrapping="true" class="sapUiSmallMarginBottom" text="Copy this token to jwt.io or use in curl commands for manual testing."/>
+                          <TextArea value="{tokenModel>/rawIasToken}" rows="6" width="100%" editable="false" class="sapUiSmallMarginBottom"/>
+                          <Button text="Copy to Clipboard" icon="sap-icon://copy" press="onCopyIasToken"/>
+                        </VBox>
+                      </content>
+                    </Panel>
+                  </VBox>
+                </VBox>
+              </IconTabFilter>
+
+            <!-- TAB 2: Browse & Deploy -->
+              <IconTabFilter icon="sap-icon://upload" text="Browse &amp; Deploy" key="deploy">
+                <VBox class="sapUiMediumMargin">
+                  <Text wrapping="true" class="sapUiSmallMarginBottom"
+                    text="Select a package to browse its iFlows, then deploy or undeploy them. The named user (your email) will appear in the target Cloud Integration audit log."/>
+
+                  <!-- Destination selector -->
+                  <Panel headerText="Target Configuration" expandable="false" class="sapUiSmallMarginBottom">
+                    <content>
+                      <HBox alignItems="Center" class="sapUiSmallMargin">
+                        <Label text="Destination:" width="10rem"/>
+                        <Input value="{deployModel>/destinationName}" placeholder="target-cpi" width="20rem" class="sapUiSmallMarginEnd"/>
+                        <Button text="Refresh" icon="sap-icon://refresh" press="onRefreshPackages" enabled="{= !${deployModel>/packagesBusy}}"/>
+                      </HBox>
+                    </content>
+                  </Panel>
+
+                  <!-- Packages list (Step 1 of 2-level nav) -->
+                  <Panel headerText="Integration Packages" expandable="false" class="sapUiSmallMarginBottom">
+                    <content>
+                      <VBox class="sapUiSmallMargin">
+                        <MessageStrip
+                          visible="{deployModel>/hasPackagesError}"
+                          text="{deployModel>/packagesError}"
+                          type="Error" showIcon="true"
+                          class="sapUiSmallMarginBottom"/>
+                        <List
+                          visible="{deployModel>/hasPackages}"
+                          busy="{deployModel>/packagesBusy}"
+                          items="{path: 'deployModel>/packages'}"
+                          selectionChange="onPackageSelect"
+                          mode="SingleSelectMaster"
+                          class="sapUiSmallMarginTop">
+                          <StandardListItem
+                            title="{deployModel>Name}"
+                            description="{deployModel>Id}"
+                            type="Active"/>
+                        </List>
+                        <Text visible="{= !${deployModel>/hasPackages} &amp;&amp; !${deployModel>/packagesBusy}}" text="No packages found. Check destination and permissions."/>
+                      </VBox>
+                    </content>
+                  </Panel>
+
+                  <!-- iFlows list (Step 2 of 2-level nav) -->
+                  <Panel headerText="Integration Flows" expandable="false" visible="{deployModel>/showIflows}">
+                    <content>
+                      <VBox class="sapUiSmallMargin">
+                        <Text wrapping="true" class="sapUiSmallMarginBottom"
+                          text="Package: {deployModel>/selectedPackageName}"/>
+                        <MessageStrip
+                          visible="{deployModel>/hasIflowsError}"
+                          text="{deployModel>/iflowsError}"
+                          type="Error" showIcon="true"
+                          class="sapUiSmallMarginBottom"/>
+                        <List
+                          visible="{deployModel>/hasIflows}"
+                          busy="{deployModel>/iflowsBusy}"
+                          items="{path: 'deployModel>/iflows'}"
+                          selectionChange="onIflowSelection"
+                          mode="MultiSelect"
+                          class="sapUiSmallMarginTop">
+                          <ObjectListItem
+                            title="{deployModel>Name}"
+                            number="{deployModel>Version}"
+                            numberUnit="Version"
+                            type="Active">
+                            <attributes>
+                              <ObjectAttribute text="{deployModel>Id}"/>
+                            </attributes>
+                          </ObjectListItem>
+                        </List>
+                        <Text visible="{= !${deployModel>/hasIflows} &amp;&amp; !${deployModel>/iflowsBusy}}" text="No iFlows found in this package."/>
+                      </VBox>
+                    </content>
+                  </Panel>
+
+                  <!-- Deploy/Undeploy actions -->
+                  <Panel headerText="Deploy / Undeploy" expandable="false" class="sapUiSmallMarginTop">
+                    <content>
+                      <VBox class="sapUiSmallMargin">
+                        <Text wrapping="true" class="sapUiSmallMarginBottom"
+                          text="Select one or more iFlows above, then click Deploy or Undeploy. The named user will appear in the Cloud Integration audit log."/>
+                        <HBox class="sapUiSmallMarginTop" alignItems="Center">
+                          <Button text="Deploy Selected" icon="sap-icon://upload" type="Emphasized" press="onDeploy" enabled="{= !${deployModel>/busy}}"/>
+                          <Button text="Undeploy Selected" icon="sap-icon://download" type="Default" press="onUndeploy" enabled="{= !${deployModel>/busy}}" class="sapUiTinyMarginBegin"/>
+                        </HBox>
+                        <MessageStrip
+                          visible="{deployModel>/hasResult}"
+                          text="{deployModel>/resultMessage}"
+                          type="{deployModel>/resultType}"
+                          showIcon="true"
+                          class="sapUiSmallMarginTop"/>
+                      </VBox>
+                    </content>
+                  </Panel>
+
+                </VBox>
+              </IconTabFilter>
+
+            <!-- TAB 3: About -->
+              <IconTabFilter icon="sap-icon://hint" text="About" key="about">
+                <VBox class="sapUiMediumMargin">
+                  <Panel headerText="Principal Propagation — Named User Attribution" expandable="false" class="sapUiSmallMarginBottom">
+                    <content>
+                      <VBox class="sapUiSmallMargin">
+                        <Text wrapping="true"
+                          text="This application demonstrates how to propagate the logged-in user's identity through a multi-subaccount SAP BTP architecture, ensuring that named users (not service accounts) appear in audit logs when deploying integration flows."/>
+                        <Text wrapping="true" class="sapUiSmallMarginTop"
+                          text="The token flow uses two hops: (1) IAS app-to-app exchange to re-audience the user's login token for the target application, and (2) XSUAA jwt-bearer exchange to obtain a target-scoped access token."/>
+                      </VBox>
+                    </content>
+                  </Panel>
+
+                  <Panel headerText="Verification Checklist" expandable="false" class="sapUiSmallMarginBottom">
+                    <content>
+                      <VBox class="sapUiSmallMargin">
+                        <CheckBox text="1. Token Check tab shows IAS token present (x-identity-token = true)"/>
+                        <CheckBox text="2. Browse &amp; Deploy tab lists packages and iFlows from target Cloud Integration"/>
+                        <CheckBox text="3. Deploy button returns success; check logs"/>
+                        <CheckBox text="4. In SAP Integration Suite → Monitor → Integrations → Audit Log, filter for DEPLOY events. User column shows firstname.lastname@domain.com (NOT sb-...)"/>
+                        <Text wrapping="true" class="sapUiSmallMarginTop"
+                          text="If step 4 shows a service account, the token exchange chain may be incomplete. Check IAS app-to-app dependency configuration and Destination JWKS cache."/>
+                      </VBox>
+                    </content>
+                  </Panel>
+
+                  <Panel headerText="Documentation" expandable="false">
+                    <content>
+                      <VBox class="sapUiSmallMargin">
+                        <Link href="../../docs/principal-propagation-guide.html" target="_blank" text="Principal Propagation Guide (HTML)"/>
+                        <Link href="../../SAP_Community_Blog_Final.html" target="_blank" text="SAP Community Blog — Named-User Attribution Pattern" class="sapUiSmallMarginTop"/>
+                      </VBox>
+                    </content>
+                  </Panel>
+
+                </VBox>
+              </IconTabFilter>
+
+            </items>
+          </IconTabBar>
+        </content>
+      </Page>
+    </App>
+  </Shell>
+
+</mvc:View>

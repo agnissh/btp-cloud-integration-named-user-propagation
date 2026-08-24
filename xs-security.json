@@ -1,0 +1,36 @@
+{
+  "xsappname": "btp-named-user-propagation",
+  "tenant-mode": "dedicated",
+  "description": "BTP Named User Propagation — Principal Propagation for CPI iFlow Deploy",
+  "oauth2-configuration": {
+    "token-validity": 900,
+    "system-attributes": ["ias-token"],
+    "redirect-uris": [
+      "https://*.cfapps.*.hana.ondemand.com/**",
+      "http://localhost:5000/**"
+    ]
+  },
+  "scopes": [
+    {
+      "name": "$XSAPPNAME.deploy",
+      "description": "Permission to trigger iFlow deploy/undeploy"
+    }
+  ],
+  "attributes": [],
+  "role-templates": [
+    {
+      "name": "Deployer",
+      "description": "Can deploy and undeploy integration flows",
+      "scope-references": ["$XSAPPNAME.deploy"]
+    }
+  ],
+  "role-collections": [
+    {
+      "name": "BTP-NUP-Deployer",
+      "description": "Role collection for named user principal propagation deploy",
+      "role-template-references": [
+        "$XSAPPNAME.Deployer"
+      ]
+    }
+  ]
+}

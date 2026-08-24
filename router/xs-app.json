@@ -1,0 +1,21 @@
+{
+  "authenticationMethod": "route",
+  "welcomeFile": "/index.html",
+  "logout": {
+    "logoutEndpoint": "/do/logout"
+  },
+  "routes": [
+    {
+      "source": "^/api/(.*)$",
+      "destination": "cap-backend",
+      "authenticationType": "xsuaa",
+      "csrfProtection": false
+    },
+    {
+      "source": "^/(.*)$",
+      "localDir": "webapp",
+      "authenticationType": "xsuaa",
+      "cacheControl": "no-cache, no-store, must-revalidate"
+    }
+  ]
+}

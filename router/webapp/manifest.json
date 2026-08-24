@@ -1,0 +1,38 @@
+{
+  "_version": "1.68.0",
+  "sap.app": {
+    "id": "iflowpptest",
+    "type": "application",
+    "title": "Principal Propagation Test — iFlow Deploy",
+    "description": "E2E test for named-user attribution on Cloud Integration deploy/undeploy",
+    "applicationVersion": { "version": "1.0.3" }
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "deviceTypes": { "desktop": true, "tablet": false, "phone": false }
+  },
+  "sap.ui5": {
+    "rootView": {
+      "viewName": "iflowpptest.view.Main",
+      "type": "XML",
+      "async": true,
+      "id": "appView"
+    },
+    "dependencies": {
+      "minUI5Version": "1.136.0",
+      "libs": {
+        "sap.m": {},
+        "sap.ui.layout": {},
+        "sap.ui.core": {}
+      }
+    },
+    "models": {
+      "tokenModel": {
+        "type": "sap.ui.model.json.JSONModel"
+      },
+      "deployModel": {
+        "type": "sap.ui.model.json.JSONModel"
+      }
+    }
+  }
+}

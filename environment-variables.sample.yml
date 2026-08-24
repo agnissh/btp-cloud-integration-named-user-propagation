@@ -1,0 +1,24 @@
+# BTP Named User Propagation — Environment Variables
+# Copy this file to environment-variables.yml, fill in your values, and NEVER commit it.
+# Used by: cf deploy ... -e environment-variables.yml
+#
+# How to use:
+#   npm run deploy:cf   (automatically picks up environment-variables.yml if present)
+
+_schema-version: "3.1"
+ID: btp-named-user-propagation
+extends: btp-named-user-propagation
+
+modules:
+  - name: btp-nup-srv
+    properties:
+      IAS_TOKEN_URL: "https://<ias-tenant>/oauth2/token"
+      # IAS_CLIENT_ID must be the IAS *application* client ID (the UUID shown in
+      # IAS Admin Console → your app → Authentication and Access → Client Authentication).
+      # NOT the CF identity service binding clientid — those are different values.
+      IAS_CLIENT_ID: "<ias-app-client-id>"
+      IAS_CLIENT_SECRET: "<ias-app-client-secret>"
+      # IAS_RESOURCE identifies the target CPI provider app. Use one of:
+      #   urn:sap:identity:application:provider:clientid:<cpi-ias-app-client-id>  (preferred, unambiguous)
+      #   urn:sap:identity:application:provider:name:<dependency-name>             (name-based, matches dep name in IAS)
+      IAS_RESOURCE: "urn:sap:identity:application:provider:clientid:<cpi-ias-app-client-id>"

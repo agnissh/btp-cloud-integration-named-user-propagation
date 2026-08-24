@@ -1,0 +1,51 @@
+{
+  "name": "btp-named-user-propagation",
+  "version": "1.0.0",
+  "description": "BTP Named User Propagation — CAP + UI5 reference implementation for cross-subaccount named user principal propagation on SAP BTP CF",
+  "private": true,
+
+  "//workspaces": "npm workspaces: srv = CAP handler (Cloud SDK deps), router = AppRouter (@sap/approuter)",
+  "workspaces": [
+    "srv",
+    "router"
+  ],
+
+  "scripts": {
+    "//start": "Production start — used by MTA/CF (cds-serve reads srv/ via CDS conventions from root)",
+    "start": "cds-serve",
+
+    "//dev": "Local dev: starts CAP backend + AppRouter concurrently. Requires: npm i -g @sap/cds-dk",
+    "dev": "concurrently \"npm run srv:dev\" \"npm run router:dev\"",
+    "srv:dev": "cds watch",
+    "router:dev": "cd router && npm start",
+
+    "//build": "CF deployment: requires mbt (npm i -g mbt) and CF CLI logged in",
+    "build:cf": "mbt build -t mta_archives",
+    "deploy:cf": "cf deploy $(ls mta_archives/*.mtar | head -1) --retries 0 -f $([ -f environment-variables.yml ] && echo '-e environment-variables.yml')",
+    "build:deploy:cf": "npm run build:cf && npm run deploy:cf"
+  },
+
+  "//dependencies": "@sap/cds lives at root so cds-serve resolves srv/service.cds from project root",
+  "dependencies": {
+    "@sap/cds": "^10.0.6"
+  },
+
+  "//devDependencies": "concurrently powers 'npm run dev' — not deployed to CF",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+
+  "engines": {
+    "node": ">=22"
+  },
+
+  "//cds": "CDS auth config: xsuaa in production, dummy (no-auth) in local development",
+  "cds": {
+    "requires": {
+      "auth": {
+        "[production]": { "kind": "xsuaa" },
+        "[development]": { "kind": "dummy" }
+      }
+    }
+  }
+}

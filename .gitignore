@@ -1,0 +1,58 @@
+# Environment secrets (copy from environment-variables.sample.yml, never commit)
+environment-variables.yml
+
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Build artifacts
+mta_archives/
+mta-op-*/
+Makefile_*.mta
+*.mtar
+dist/
+build/
+
+# Temporary files
+*.dtmp
+*.bkp
+*.tmp
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+package-lock.json
+# Docs folder (internal drafts, diagrams, testing guides)
+docs/
+
+# Real environment variables (never commit — use environment-variables.sample.yml)
+environment-variables.yml
+
+# Internal tooling state
+.claude/
+.hyperspace/
+.serena/
+
+# Stray blog/community draft files
+SAP_Community_Blog_Final_v4.html

@@ -1,0 +1,11 @@
+{
+  "requires": {
+    "auth": {
+      "[production]": { "kind": "xsuaa" },
+      "[development]": { "kind": "dummy" }
+    }
+  },
+  "server": {
+    "port": 4004
+  }
+}

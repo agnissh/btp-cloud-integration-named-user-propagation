@@ -1,0 +1,103 @@
+_schema-version: "3.1"
+ID: btp-named-user-propagation
+version: 1.0.10
+description: "BTP Named User Propagation — Principal Propagation for CPI Deploy/Undeploy"
+
+modules:
+
+  # ─── AppRouter ───────────────────────────────────────────────────────────────
+  - name: btp-nup-router
+    type: approuter.nodejs
+    path: router
+    parameters:
+      disk-quota: 256M
+      memory: 256M
+      buildpack: nodejs_buildpack
+      routes:
+        # Replace <region> with your CF region, e.g. eu10-005, us10-001, ap10
+        - route: btp-nup-router.cfapps.<region>.hana.ondemand.com
+    build-parameters:
+      builder: npm-ci
+    properties:
+      # KEY: makes approuter forward the IAS token in x-identity-token header
+      ENABLE_FORWARD_CORPORATE_IDP_TOKEN: true
+      SEND_XFRAMEOPTIONS: false
+      # Fix for "locationAfterLogin cookie missing" in approuter v23 (SameSite cookie issue)
+      COOKIES: '{"SameSite":"None"}'
+      SESSION_TIMEOUT: 30
+    requires:
+      - name: btp-nup-xsuaa
+      - name: btp-nup-destination
+      # Inject the CAP backend URL as a destination for the approuter
+      - name: srv-api
+        group: destinations
+        properties:
+          name: cap-backend
+          url: "~{srv-url}"
+          forwardAuthToken: true
+          # forwardAuthToken on the destination (not in xs-app.json route) — required for approuter v23+
+
+  # ─── CAP Backend ─────────────────────────────────────────────────────────────
+  - name: btp-nup-srv
+    type: nodejs
+    path: .
+    parameters:
+      disk-quota: 512M
+      memory: 512M
+      buildpack: nodejs_buildpack
+    build-parameters:
+      builder: npm-ci
+      ignore: ["router/", "mta_archives/", "destinations/", "docs/", ".git/"]
+    properties:
+      # ── IAS two-hop token exchange credentials ───────────────────────────────
+      # Set these values before deploying, or override with cf set-env after deploy.
+      # Never commit real secrets — use placeholder values here and set-env in CI/CD.
+      IAS_TOKEN_URL: "https://<ias-tenant>/oauth2/token"
+      IAS_CLIENT_ID: "<source-ias-app-client-id>"
+      IAS_CLIENT_SECRET: "<source-ias-app-client-secret>"
+      IAS_RESOURCE: "urn:sap:identity:application:provider:clientid:<cpi-ias-app-client-id>"
+    provides:
+      - name: srv-api
+        properties:
+          srv-url: "${default-url}"
+    requires:
+      - name: btp-nup-xsuaa
+      - name: btp-nup-destination
+      - name: btp-nup-ias
+
+resources:
+
+  # ─── XSUAA ───────────────────────────────────────────────────────────────────
+  - name: btp-nup-xsuaa
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: xsuaa
+      service-plan: application
+      path: ./xs-security.json
+
+  # ─── Destination Service ─────────────────────────────────────────────────────
+  - name: btp-nup-destination
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: destination
+      service-plan: lite
+
+  # ─── IAS (Cloud Identity Services) ──────────────────────────────────────────
+  - name: btp-nup-ias
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: identity
+      service-plan: application
+      config:
+        display-name: btp-named-user-propagation
+        oauth2-configuration:
+          token-policy:
+            access-token-format: jwt
+        # NOTE: The identity broker schema does not support declaring a cross-app
+        # dependency inline here. After deploy, manually add the dependency in
+        # IAS Admin Console (https://aghv2wufa.accounts.ondemand.com):
+        #   Applications & Resources → Applications → "btp-named-user-propagation"
+        #   → APIs → Dependencies → Add
+        #   → Provider: "SAP BTP subaccount Integration Suite - Production"
+        #   → API: "is-prod"  → Save
+        # Then: cf restart btp-nup-srv

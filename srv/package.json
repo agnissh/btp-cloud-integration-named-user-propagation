@@ -1,0 +1,13 @@
+{
+  "name": "btp-nup-srv",
+  "version": "1.0.0",
+  "description": "BTP Named User Propagation - CAP Service",
+  "private": true,
+  "dependencies": {
+    "@sap-cloud-sdk/connectivity": "^4.8.0",
+    "@sap-cloud-sdk/http-client": "^4.8.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

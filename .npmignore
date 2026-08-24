@@ -1,0 +1,12 @@
+router/
+mta_archives/
+destinations/
+docs/
+content.md
+TESTING_GUIDE.md
+*.md
+mta-op-*/
+.DS_Store
+.git/
+.gitignore
+Makefile_*.mta
